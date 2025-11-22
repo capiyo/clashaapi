@@ -1,0 +1,2 @@
+fn(axum::extract::State<Pool<MySql>>) -> impl std::future::Future<Output = {type error}> {get_posts}
+fn(axum::extract::State<Pool<MySql>>) -> impl std::future::Future<Output = {type error}> {get_posts}: Handler<_, _>
