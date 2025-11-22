@@ -1,13 +1,14 @@
 use tracing_subscriber;
 use axum::{
     extract::State,
-    http::{HeaderMap, StatusCode, Method},
+    http::{HeaderMap, StatusCode},
     response::Json,
     routing::{get, post},
-    Router,
+    Router,http::{Method, HeaderValue},
 };
 use axum_extra::extract::Multipart;
 use tower_http::cors::{Any, CorsLayer};
+
 use std::net::SocketAddr;
 
 mod routes;
@@ -38,18 +39,18 @@ async fn main() {
 
     // CORS configuration
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin("https://fanclash.netlify.app".parse::<HeaderValue>().unwrap())
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers(Any)
-        .allow_origin(Any);
+        .allow_credentials(false);
 
-    // Build application
     let app = Router::new()
         .route("/", get(|| async { "Peer-to-Peer Betting API" }))
         .nest("/api/auth", auth::routes())
         .nest("/api/games", games::routes())
         .nest("/api/posts", posts::routes())
         .nest("/api", posts::upload_routes()) // Add upload routes for serving images
-        .layer(cors)
+        .layer(cors) // Add CORS layer here
         .with_state(pool);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
