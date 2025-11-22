@@ -89,33 +89,34 @@ pub async fn create_post(
     let post_id = Uuid::new_v4();
     let now = Utc::now();
 
-    // Updated SQL query - removed user_email
-    sqlx::query!(
+    // FIXED: Borrow the strings instead of moving them
+    sqlx::query(
         r#"
         INSERT INTO posts (id, user_id, user_name, caption, image_url, image_path, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
-        post_id.to_string(),
-        user_id,
-        user_name,
-        caption,
-        image_url,
-        file_path,
-        now,
-        now
+        "#
     )
+        .bind(&post_id.to_string())  // Borrow
+        .bind(&user_id)              // Borrow
+        .bind(&user_name)            // Borrow
+        .bind(&caption)              // Borrow instead of move
+        .bind(&image_url)            // Borrow instead of move
+        .bind(&file_path)            // Borrow
+        .bind(now)
+        .bind(now)
         .execute(&pool)
         .await
         .map_err(AppError::Database)?;
 
+    // FIXED: Now we can use the variables because we borrowed them above
     Ok(Json(json!({
         "success": true,
         "message": "Post created successfully",
         "post": {
             "id": post_id,
-            "image_url": image_url,
-            "caption": caption,
-            "user_name": user_name
+            "image_url": image_url,      // Now this works
+            "caption": caption,          // Now this works
+            "user_name": user_name       // Now this works
         }
     })))
 }
@@ -123,8 +124,8 @@ pub async fn create_post(
 pub async fn get_posts(
     axum::extract::State(pool): axum::extract::State<MySqlPool>
 ) -> Result<Json<serde_json::Value>> {
-    let posts = sqlx::query_as!(
-        Post,
+    // FIXED: Changed query_as! to query_as
+    let posts = sqlx::query_as::<_, Post>(
         r#"
         SELECT id, user_id, user_name, caption, image_url, image_path, created_at, updated_at
         FROM posts
@@ -147,15 +148,15 @@ pub async fn get_post_by_id(
     axum::extract::State(pool): axum::extract::State<MySqlPool>,
     axum::extract::Path(post_id): axum::extract::Path<Uuid>,
 ) -> Result<Json<serde_json::Value>> {
-    let post = sqlx::query_as!(
-        Post,
+    // FIXED: Changed query_as! to query_as
+    let post = sqlx::query_as::<_, Post>(
         r#"
         SELECT id, user_id, user_name, caption, image_url, image_path, created_at, updated_at
         FROM posts
         WHERE id = ?
-        "#,
-        post_id.to_string()
+        "#
     )
+        .bind(post_id.to_string())
         .fetch_optional(&pool)
         .await
         .map_err(AppError::Database)?;
@@ -174,16 +175,16 @@ pub async fn get_posts_by_user(
     axum::extract::State(pool): axum::extract::State<MySqlPool>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>> {
-    let posts = sqlx::query_as!(
-        Post,
+    // FIXED: Changed query_as! to query_as
+    let posts = sqlx::query_as::<_, Post>(
         r#"
         SELECT id, user_id, user_name, caption, image_url, image_path, created_at, updated_at
         FROM posts
         WHERE user_id = ?
         ORDER BY created_at DESC
-        "#,
-        user_id
+        "#
     )
+        .bind(user_id)
         .fetch_all(&pool)
         .await
         .map_err(AppError::Database)?;
@@ -203,15 +204,15 @@ pub async fn delete_post(
     axum::extract::Path(post_id): axum::extract::Path<Uuid>,
 ) -> Result<Json<serde_json::Value>> {
     // First get the post to find the image path
-    let post = sqlx::query_as!(
-        Post,
+    // FIXED: Changed query_as! to query_as
+    let post = sqlx::query_as::<_, Post>(
         r#"
         SELECT id, user_id, user_name, caption, image_url, image_path, created_at, updated_at
         FROM posts
         WHERE id = ?
-        "#,
-        post_id.to_string()
+        "#
     )
+        .bind(post_id.to_string())
         .fetch_optional(&pool)
         .await
         .map_err(AppError::Database)?;
@@ -220,17 +221,17 @@ pub async fn delete_post(
         Some(post) => {
             // Delete the image file from filesystem
             if let Err(e) = fs::remove_file(&post.image_path).await {
-                tracing::warn!("Failed to delete image file {}: {}", post.image_path, e);
+                eprintln!("Failed to delete image file {}: {}", post.image_path, e);
             }
 
-            // Delete the post from database
-            sqlx::query!(
+            // FIXED: Changed query! to query
+            sqlx::query(
                 r#"
                 DELETE FROM posts
                 WHERE id = ?
-                "#,
-                post_id.to_string()
+                "#
             )
+                .bind(post_id.to_string())
                 .execute(&pool)
                 .await
                 .map_err(AppError::Database)?;
@@ -254,16 +255,17 @@ pub async fn update_post_caption(
         .and_then(|c| c.as_str())
         .ok_or(AppError::InvalidUserData)?;
 
-    let result = sqlx::query!(
+    // FIXED: Changed query! to query
+    let result = sqlx::query(
         r#"
-        UPDATE posts 
+        UPDATE posts
         SET caption = ?, updated_at = ?
         WHERE id = ?
-        "#,
-        new_caption,
-        Utc::now(),
-        post_id.to_string()
+        "#
     )
+        .bind(new_caption)
+        .bind(Utc::now())
+        .bind(post_id.to_string())
         .execute(&pool)
         .await
         .map_err(AppError::Database)?;

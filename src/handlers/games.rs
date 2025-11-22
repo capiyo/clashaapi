@@ -39,7 +39,7 @@ pub async fn get_games(
             .bind(query.league)
             .fetch_all(&pool)
             .await
-    }
+    }  // <- This was missing the closing brace
         .map_err(|e| {
             eprintln!("❌ DATABASE ERROR: {:?}", e);
             eprintln!("💡 Error details: {}", e);
@@ -54,28 +54,29 @@ pub async fn create_game(
     State(pool): State<MySqlPool>,
     Json(payload): Json<CreateGame>,
 ) -> Result<Json<Game>, StatusCode> {
-    let game_id = sqlx::query!(
+    let result = sqlx::query(
         r#"
         INSERT INTO games (
             home_team, away_team, league,
             home_win, away_win, draw, date, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Upcoming')
-        "#,
-        payload.home_team,
-        payload.away_team,
-        payload.league,
-        payload.home_win,
-        payload.away_win,
-        payload.draw,
-        payload.date
+        "#
     )
+        .bind(&payload.home_team)
+        .bind(&payload.away_team)
+        .bind(&payload.league)
+        .bind(payload.home_win)
+        .bind(payload.away_win)
+        .bind(payload.draw)
+        .bind(payload.date)
         .execute(&pool)
         .await
         .map_err(|e| {
             eprintln!("❌ INSERT ERROR: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .last_insert_id();
+        })?;
+
+    let game_id = result.last_insert_id();
 
     let game = sqlx::query_as::<_, Game>(
         "SELECT * FROM games WHERE id = ?"
@@ -90,4 +91,4 @@ pub async fn create_game(
 
     println!("✅ Successfully created game: {} vs {}", game.home_team, game.away_team);
     Ok(Json(game))
-}
+}  // <- Make sure this function is properly closed
