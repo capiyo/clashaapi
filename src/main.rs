@@ -37,9 +37,14 @@ async fn main() {
     // Initialize database pool
     let pool = get_db_pool().await;
 
-    // CORS configuration - FIXED VERSION
+    // CORS configuration - ALLOW MULTIPLE ORIGINS
     let cors = CorsLayer::new()
-        .allow_origin("https://fanclash.netlify.app".parse::<HeaderValue>().unwrap())
+        .allow_origin([
+            "https://fanclash.netlify.app".parse::<HeaderValue>().unwrap(),
+            "http://10.145.30.38:3001".parse::<HeaderValue>().unwrap(),
+            "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+            "http://localhost:3001".parse::<HeaderValue>().unwrap(),
+        ])
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers(Any)
         .allow_credentials(false);
@@ -59,3 +64,4 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
+
