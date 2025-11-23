@@ -4,7 +4,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::Json,
     routing::{get, post},
-    Router,http::{Method, HeaderValue},
+    Router, http::{Method, HeaderValue},
 };
 use axum_extra::extract::Multipart;
 use tower_http::cors::{Any, CorsLayer};
@@ -37,7 +37,7 @@ async fn main() {
     // Initialize database pool
     let pool = get_db_pool().await;
 
-    // CORS configuration
+    // CORS configuration - FIXED VERSION
     let cors = CorsLayer::new()
         .allow_origin("https://fanclash.netlify.app".parse::<HeaderValue>().unwrap())
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
@@ -49,8 +49,8 @@ async fn main() {
         .nest("/api/auth", auth::routes())
         .nest("/api/games", games::routes())
         .nest("/api/posts", posts::routes())
-        .nest("/api", posts::upload_routes()) // Add upload routes for serving images
-        .layer(cors) // Add CORS layer here
+        .nest("/api", posts::upload_routes())
+        .layer(cors)
         .with_state(pool);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
