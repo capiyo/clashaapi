@@ -42,6 +42,7 @@ async fn main() {
         .allow_origin([
             "https://fanclash.netlify.app".parse::<HeaderValue>().unwrap(),
             "http://10.145.30.38:3001".parse::<HeaderValue>().unwrap(),
+            "http://192.168.56.1:3001".parse::<HeaderValue>().unwrap(),
             "http://localhost:3000".parse::<HeaderValue>().unwrap(),
             "http://localhost:3001".parse::<HeaderValue>().unwrap(),
         ])
