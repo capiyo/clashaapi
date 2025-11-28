@@ -19,7 +19,7 @@ mod database;
 mod errors;
 mod dumper;
 
-use routes::{auth, games, posts};
+use routes::{auth, games, posts,pledges};
 use database::connection::get_db_pool;
 
 #[tokio::main]
@@ -56,7 +56,8 @@ async fn main() {
         .nest("/api/auth", auth::routes())
         .nest("/api/games", games::routes())
         .nest("/api/posts", posts::routes())
-        .nest("/api/pledges", posts::routes())
+        .nest("/api/pledges", pledges::routes())
+
         .nest("/api", posts::upload_routes())
         .layer(cors)
         .with_state(pool);
