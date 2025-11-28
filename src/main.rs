@@ -17,6 +17,7 @@ mod handlers;
 mod middleware;
 mod database;
 mod errors;
+mod dumper;
 
 use routes::{auth, games, posts};
 use database::connection::get_db_pool;
@@ -55,6 +56,7 @@ async fn main() {
         .nest("/api/auth", auth::routes())
         .nest("/api/games", games::routes())
         .nest("/api/posts", posts::routes())
+        .nest("/api/pledges", posts::routes())
         .nest("/api", posts::upload_routes())
         .layer(cors)
         .with_state(pool);
